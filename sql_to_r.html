@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>SQL to R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Asha Yadav" />
+    <link href="sql_to_r_files/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="sql_to_r_files/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+    <link href="sql_to_r_files/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# SQL to R
+## Extra credit presentation
+### Asha Yadav
+### University of Oregon
+### March 4th, 2020
+
+---
+
+
+# Objective
+
+
+### 1. Connect with  a database using R
+
+### 2. Run SQL (Structure Query Language) queries using RSQLite(package) and dplyr in R
+---
+
+# Database type and R packages
+
+## R Package (left) and Database type (right):
+
+.pull-left[
+1. RMySQL
+
+1. RPostgreSQL
+
+1. RSQLite
+
+1. odbc
+
+1. bigrquery
+
+]
+
+.pull-right[
+1. MySQL and MariaDB
+
+1. Postgres and Redshift
+
+1. SQLite
+
+1. Many commercial databases
+
+1. GoogleBigQuery
+
+]
+
+---
+
+# File structure
+
+### 1. Flat rectangular files
+
+### 2. Longitudinal/multiwave study files (Hierarchical files)
+
+### 3. *Relational Database (SQLite)*
+
+
+
+&lt;img src="picture1.png" width="80%" /&gt;
+
+---
+
+# Connect
+
+
+
+## Connect to database using  'RSQLite'  and 'dbplyr' (R packages)
+
+
+### 1. Focuses on RETRIEVING and ANALYZING dataset (SELECT SQL statement).
+
+### 2. It doesn’t MODIFY the dataset.
+
+### 3. It doesn’t UPDATE or DELETE entries in database.
+
+---
+
+# Step 1 Packages required
+
+
+
+
+```r
+library(dplyr)
+library(dbplyr)
+library(RSQLite)
+```
+
+Downloaded the database for demonstration purpose.
+
+
+```r
+dir.create("data_raw", showWarnings = FALSE)
+download.file(url = "https://ndownloader.figshare.com/files/2292171",
+              destfile = "data_raw/portal_mammals.sqlite", mode = "wb")
+```
+---
+
+# Step 2 Connect command
+
+
+```r
+mammals &lt;- DBI::dbConnect(RSQLite::SQLite(),"data_raw/portal_mammals.sqlite")
+```
+
+### 1. DBI allows R to send commands to database regardless of database mgmt system.
+
+### 2. RSQLite package allows R to interface with SQLite database.
+
+### 3. We are not loading data in R instead we are only connecting at this stage.
+
+---
+
+# Step 3 To view tables from the database
+
+
+
+```r
+src_dbi(mammals)
+```
+
+```
+## src:  sqlite 3.30.1 [D:\Winter 2020\EDLD 610 Data Science 2\Extracredit\sql_to_r\data_raw\portal_mammals.sqlite]
+## tbls: plots, species, surveys
+```
+
+
+##  Argument 'src_dbi' views tables in the database. Here we got:
+
+###- plots
+
+###- species
+
+###- surveys
+---
+
+# Step 4 Querying database with SQL syntax
+
+
+```r
+tbl(mammals, sql("SELECT year, species_id, plot_id FROM surveys"))
+```
+
+```
+## # Source:   SQL [?? x 3]
+## # Database: sqlite 3.30.1 [D:\Winter 2020\EDLD 610 Data Science
+## #   2\Extracredit\sql_to_r\data_raw\portal_mammals.sqlite]
+##     year species_id plot_id
+##    &lt;int&gt; &lt;chr&gt;        &lt;int&gt;
+##  1  1977 NL               2
+##  2  1977 NL               3
+##  3  1977 DM               2
+##  4  1977 DM               7
+##  5  1977 DM               3
+##  6  1977 PF               1
+##  7  1977 PE               2
+##  8  1977 DM               1
+##  9  1977 DM               1
+## 10  1977 PF               6
+## # ... with more rows
+```
+
+---
+# Step 4 Continues...
+
+### 1. To retrieve data from the tables in the database, you can connect using **tbl()** function from dplyr.
+
+### 2. If you know SQL, you can use any SQL queries to work with the database.
+
+
+### 3. But same operations can be done in dplyr instead of using SQL.
+
+
+---
+
+# Step 5 Querying database with dplyr syntax
+
+
+```r
+surveys &lt;- tbl(mammals, "surveys")
+surveys%&gt;%
+  select(year, species_id, plot_id)
+```
+
+```
+## # Source:   lazy query [?? x 3]
+## # Database: sqlite 3.30.1 [D:\Winter 2020\EDLD 610 Data Science
+## #   2\Extracredit\sql_to_r\data_raw\portal_mammals.sqlite]
+##     year species_id plot_id
+##    &lt;int&gt; &lt;chr&gt;        &lt;int&gt;
+##  1  1977 NL               2
+##  2  1977 NL               3
+##  3  1977 DM               2
+##  4  1977 DM               7
+##  5  1977 DM               3
+##  6  1977 PF               1
+##  7  1977 PE               2
+##  8  1977 DM               1
+##  9  1977 DM               1
+## 10  1977 PF               6
+## # ... with more rows
+```
+
+```r
+head(surveys)
+```
+
+```
+## # Source:   lazy query [?? x 9]
+## # Database: sqlite 3.30.1 [D:\Winter 2020\EDLD 610 Data Science
+## #   2\Extracredit\sql_to_r\data_raw\portal_mammals.sqlite]
+##   record_id month   day  year plot_id species_id sex   hindfoot_length weight
+##       &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;   &lt;int&gt; &lt;chr&gt;      &lt;chr&gt;           &lt;int&gt;  &lt;int&gt;
+## 1         1     7    16  1977       2 NL         M                  32     NA
+## 2         2     7    16  1977       3 NL         M                  33     NA
+## 3         3     7    16  1977       2 DM         F                  37     NA
+## 4         4     7    16  1977       7 DM         M                  36     NA
+## 5         5     7    16  1977       3 DM         M                  35     NA
+## 6         6     7    16  1977       1 PF         M                  14     NA
+```
+
+
+- Object 'surveys' behaves like a dataframe. 
+
+- All the functions that we have used for dataframes can be applied here onwards.
+
+---
+
+# SQL Translation
+
+- These dplyr commands are not executed by R. 
+
+- It is sent to database and final result is retrieved.
+
+- It brings only first 10 results (called dplyr 'Laziness')
+
+
+```r
+surveys%&gt;%
+  filter(weight &lt; 5) %&gt;%
+  select(species_id, sex, weight)
+```
+
+```
+## # Source:   lazy query [?? x 3]
+## # Database: sqlite 3.30.1 [D:\Winter 2020\EDLD 610 Data Science
+## #   2\Extracredit\sql_to_r\data_raw\portal_mammals.sqlite]
+##    species_id sex   weight
+##    &lt;chr&gt;      &lt;chr&gt;  &lt;int&gt;
+##  1 PF         M          4
+##  2 PF         F          4
+##  3 PF         &lt;NA&gt;       4
+##  4 PF         F          4
+##  5 PF         F          4
+##  6 RM         M          4
+##  7 RM         F          4
+##  8 RM         M          4
+##  9 RM         M          4
+## 10 RM         M          4
+## # ... with more rows
+```
+
+---
+
+# dplyr Laziness
+
+- dplyr retrieves usually the first 10 results from the table.
+
+- Commands like select or filter to retrieve data from database are not   executed by R. It is sent to the database and only final result is 
+  retrived and displayed. 
+  
+- To retrieve all of the dplyr results from the database
+
+
+```r
+data_subset &lt;- surveys %&gt;%
+  filter(weight &lt; 5) %&gt;%
+  select(species_id, sex, weight) %&gt;%
+  collect()
+```
+
+
+- Now you have complete results from your query and you can continue working in R
+
+---
+
+# Last but not the least 
+
+## Complex database queries
+
+- You can use dplyr to connect with multiple tables.
+
+- Did you know you can create a SQLite databse using csv files in R
+
+
+Leaving that for you to explore.
+
+### Resources
+
+https://datacarpentry.org/R-ecology-lesson/05-r-and-databases.html#introduction
+
+https://db.rstudio.com/getting-started/database-queries/
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function(time) {
+  var d2 = function(number) {
+    return ('0' + number).slice(-2); // left-pad 0 to minutes/seconds
+  },
+
+  time_format = function(total) {
+    var secs = Math.abs(total) / 1000;
+    var h = Math.floor(secs / 3600);
+    var m = Math.floor(secs % 3600 / 60);
+    var s = Math.round(secs % 60);
+    var res = d2(m) + ':' + d2(s);
+    if (h > 0) res = h + ':' + res;
+    return res;  // [hh:]mm:ss
+  },
+
+  slide_number_div = function(i) {
+    return document.getElementsByClassName('remark-slide-number').item(i);
+  },
+
+  current_page_number = function(i) {
+    return slide_number_div(i).firstChild.textContent;  // text "i / N"
+  };
+
+  var timer = document.createElement('span'); timer.id = 'slide-time-left';
+  var time_left = time, k = slideshow.getCurrentSlideIndex(),
+      last_page_number = current_page_number(k);
+
+  setInterval(function() {
+    time_left = time_left - 1000;
+    timer.innerHTML = ' ' + time_format(time_left);
+    if (time_left < 0) timer.style.color = 'red';
+  }, 1000);
+
+  slide_number_div(k).appendChild(timer);
+
+  slideshow.on('showSlide', function(slide) {
+    var i = slide.getSlideIndex(), n = current_page_number(i);
+    // reset timer when a new slide is shown and the page number is changed
+    if (last_page_number !== n) {
+      time_left = time; last_page_number = n;
+      timer.innerHTML = ' ' + time_format(time); timer.style.color = null;
+    }
+    slide_number_div(i).appendChild(timer);
+  });
+})(6000);
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
